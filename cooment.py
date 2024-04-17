@@ -21,7 +21,8 @@ def fetch_post_uuids(user_id, max_retries=3, timeout=30):
         try:
             response = requests.get(url, timeout=timeout, stream=True)
             response.raise_for_status()
-            posts = response.json()["posts"]
+            data = response.json()  # Parse the response content as JSON
+            posts = data["posts"]  # Access the "posts" key from the parsed data
             uuids = [post["uuid"] for post in posts]
             return uuids
         except RequestException as e:
@@ -31,6 +32,7 @@ def fetch_post_uuids(user_id, max_retries=3, timeout=30):
                 return []
 
     return []
+
 
 
 # Streamlit app
