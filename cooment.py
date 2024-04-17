@@ -1,5 +1,6 @@
 import streamlit as st
 import requests
+from requests.exceptions import RequestException
 
 # Function to fetch comments for a given post UUID
 def fetch_comments(post_uuid):
@@ -12,15 +13,25 @@ def fetch_comments(post_uuid):
         return []
 
 # Function to fetch post UUIDs for a given user ID
-def fetch_post_uuids(user_id):
+def fetch_post_uuids(user_id, max_retries=3, timeout=30):
     url = f"https://api.yodayo.com/v1/users/{user_id}/posts?offset=0&limit=500&width=600&include_nsfw=true"
-    response = requests.get(url)
-    if response.status_code == 200:
-        posts = response.json()["posts"]
-        uuids = [post["uuid"] for post in posts]
-        return uuids
-    else:
-        return []
+    retries = 0
+
+    while retries < max_retries:
+        try:
+            response = requests.get(url, timeout=timeout, stream=True)
+            response.raise_for_status()
+            posts = response.json()["posts"]
+            uuids = [post["uuid"] for post in posts]
+            return uuids
+        except RequestException as e:
+            retries += 1
+            if retries == max_retries:
+                st.error(f"Failed to fetch post UUIDs after {max_retries} retries. Error: {str(e)}")
+                return []
+
+    return []
+
 
 # Streamlit app
 def app():
